@@ -4,13 +4,21 @@ import { useAuth } from "../context/AuthContext";
 
 const AuthPage = () => {
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    // Keep usernames clean as the user types: lowercase, letters/numbers/underscores only
+    if (name === "username") {
+      setForm({ ...form, username: value.toLowerCase().replace(/[^a-z0-9_]/g, "") });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+  };
 
   const switchMode = (next) => {
     setMode(next);
@@ -20,12 +28,18 @@ const AuthPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (mode === "signup" && form.username.length < 3) {
+      setError("Username must be at least 3 characters");
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (mode === "login") {
         await login(form.email, form.password);
       } else {
-        await register(form.name, form.email, form.password);
+        await register(form.name, form.username, form.email, form.password);
       }
       navigate("/chat");
     } catch (err) {
@@ -68,10 +82,28 @@ const AuthPage = () => {
 
         <form onSubmit={handleSubmit}>
           {mode === "signup" && (
-            <div className="form-field">
-              <label>Full Name</label>
-              <input name="name" value={form.name} onChange={handleChange} required />
-            </div>
+            <>
+              <div className="form-field">
+                <label>Full Name</label>
+                <input name="name" value={form.name} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label>Username</label>
+                <input
+                  name="username"
+                  value={form.username}
+                  onChange={handleChange}
+                  placeholder="e.g. aditya_dixit"
+                  minLength={3}
+                  required
+                />
+                <p className="field-hint">
+                  {form.username
+                    ? `Others can find you as @${form.username}`
+                    : "Lowercase letters, numbers, and underscores only"}
+                </p>
+              </div>
+            </>
           )}
           <div className="form-field">
             <label>Email</label>

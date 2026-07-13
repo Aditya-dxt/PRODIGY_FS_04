@@ -72,12 +72,21 @@ const ChatSidebar = ({
               <button
                 key={room._id}
                 className={isActive ? "thread-item active" : "thread-item"}
-                onClick={() => onSelectThread({ type: "room", id: room._id, name: room.name })}
+                onClick={() =>
+                  onSelectThread({
+                    type: "room",
+                    id: room._id,
+                    name: room.name,
+                    isMember: room.isMember,
+                  })
+                }
               >
                 <div className="thread-avatar room-avatar">#</div>
                 <div className="thread-info">
                   <p className="thread-name">{room.name}</p>
-                  <p className="thread-meta">{room.memberCount} member(s)</p>
+                  <p className="thread-meta">
+                    {room.memberCount} member(s){!room.isMember && " · tap to join"}
+                  </p>
                 </div>
                 {unreadCounts[key] > 0 && <span className="unread-badge">{unreadCounts[key]}</span>}
               </button>

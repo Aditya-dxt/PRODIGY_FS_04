@@ -8,6 +8,18 @@ const userSchema = new mongoose.Schema(
       required: [true, "Name is required"],
       trim: true,
     },
+    username: {
+      type: String,
+      required: [true, "Username is required"],
+      unique: true,
+      trim: true,
+      lowercase: true,
+      minlength: [3, "Username must be at least 3 characters"],
+      match: [
+        /^[a-z0-9_]+$/,
+        "Username can only contain lowercase letters, numbers, and underscores",
+      ],
+    },
     email: {
       type: String,
       required: [true, "Email is required"],
@@ -35,7 +47,7 @@ const userSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre("save", async function (next) {

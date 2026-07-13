@@ -50,17 +50,34 @@ const ChatPage = () => {
     const key = threadKey(selectedThread.type, selectedThread.id);
     setUnreadCounts((prev) => ({ ...prev, [key]: 0 }));
 
-    const endpoint =
-      selectedThread.type === "room"
-        ? `/messages/room/${selectedThread.id}`
-        : `/messages/conversation/${selectedThread.id}`;
+    const loadThread = async () => {
+      // Clicking a room you're not a member of joins it first — same
+      // "public rooms, tap to join" pattern most chat apps use.
+      if (selectedThread.type === "room" && selectedThread.isMember === false) {
+        try {
+          await api.post(`/rooms/${selectedThread.id}/join`);
+          loadRooms();
+        } catch (err) {
+          toast.showToast(err.response?.data?.message || "Failed to join room", "error");
+          return;
+        }
+      }
 
-    api.get(endpoint).then((res) => setMessages(res.data.messages));
+      const endpoint =
+        selectedThread.type === "room"
+          ? `/messages/room/${selectedThread.id}`
+          : `/messages/conversation/${selectedThread.id}`;
 
-    if (selectedThread.type === "room") {
-      socket?.emit("room:subscribe", selectedThread.id);
-    }
-  }, [selectedThread, socket]);
+      const res = await api.get(endpoint);
+      setMessages(res.data.messages);
+
+      if (selectedThread.type === "room") {
+        socket?.emit("room:subscribe", selectedThread.id);
+      }
+    };
+
+    loadThread();
+  }, [selectedThread, socket, loadRooms, toast]);
 
   // ---- Global socket listeners ----
   useEffect(() => {

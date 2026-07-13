@@ -30,17 +30,21 @@ const sendAuthResponse = (user, statusCode, res) => {
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Please provide name, email and password" });
+    const { name, username, email, password } = req.body;
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ message: "Please provide name, username, email and password" });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
       return res.status(409).json({ message: "An account with this email already exists" });
     }
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      return res.status(409).json({ message: "That username is already taken" });
+    }
 
-    const user = await User.create({ name, email, password, avatarColor: pickColor(name) });
+    const user = await User.create({ name, username, email, password, avatarColor: pickColor(name) });
     sendAuthResponse(user, 201, res);
   } catch (error) {
     res.status(500).json({ message: "Registration failed", error: error.message });

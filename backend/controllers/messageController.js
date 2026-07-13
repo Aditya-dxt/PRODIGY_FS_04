@@ -9,6 +9,9 @@ exports.getRoomMessages = async (req, res) => {
     if (!room) {
       return res.status(404).json({ message: "Room not found" });
     }
+    if (!room.members.some((m) => m.toString() === req.user._id.toString())) {
+      return res.status(403).json({ message: "Join this room to view its messages" });
+    }
 
     const messages = await Message.find({ room: req.params.roomId })
       .populate("sender", "name avatarColor")
