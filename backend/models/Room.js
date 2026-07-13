@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 
+const generateCode = () =>
+  Math.random().toString(36).substring(2, 8).toUpperCase();
+
 const roomSchema = new mongoose.Schema(
   {
     name: {
@@ -8,24 +11,28 @@ const roomSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
-    description: {
+    description: { type: String, trim: true, default: "" },
+    code: {
       type: String,
-      trim: true,
-      default: "",
+      required: true,
+      unique: true,
+      uppercase: true,
+      default: generateCode,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    members: [
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    joinRequests: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        requestedAt: { type: Date, default: Date.now },
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Room", roomSchema);
