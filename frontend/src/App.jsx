@@ -3,6 +3,7 @@ import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -18,6 +19,14 @@ function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

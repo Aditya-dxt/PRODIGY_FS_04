@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Room = require("../models/Room");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
+const Connection = require("../models/Connection");
 
 // Tracks which socket IDs belong to which user, so presence only flips to
 // "offline" once ALL of a user's tabs/devices have disconnected.
@@ -91,31 +92,55 @@ function initSocket(io) {
           message = await message.populate("sender", "name avatarColor");
 
           io.to(`room:${targetId}`).emit("message:new", { type: "room", roomId: targetId, message });
-        } else if (type === "dm") {
-          const conversation = await Conversation.findById(targetId);
-          if (!conversation || !conversation.participants.some((p) => p.toString() === userId)) {
-            return ack?.({ success: false, message: "You are not part of this conversation" });
-          }
+        }  else if (type === "dm") {
+  const conversation = await Conversation.findById(targetId);
+  if (!conversation || !conversation.participants.some((p) => p.toString() === userId)) {
+    return ack?.({ success: false, message: "You are not part of this conversation" });
+  }
 
-          message = await Message.create({
-            conversation: targetId,
-            sender: userId,
-            content: content || "",
-            attachment: attachment || undefined,
-          });
-          message = await message.populate("sender", "name avatarColor");
+  const otherId = conversation.participants.find((p) => p.toString() !== userId).toString();
+  let connection = await Connection.findOne({
+    $or: [
+      { requester: userId, recipient: otherId },
+      { requester: otherId, recipient: userId },
+    ],
+  });
 
-          conversation.lastMessageAt = new Date();
-          await conversation.save();
+  const isConnected = connection?.status === "accepted";
 
-          conversation.participants.forEach((participantId) => {
-            io.to(`user:${participantId}`).emit("message:new", {
-              type: "dm",
-              conversationId: targetId,
-              message,
-            });
-          });
-        } else {
+  if (!isConnected) {
+    const messageCount = await Message.countDocuments({ conversation: targetId });
+    if (messageCount >= 1) {
+      return ack?.({
+        success: false,
+        message: "You've already sent your one message — waiting for them to accept your connection request.",
+      });
+    }
+    // First message doubles as a connection request
+    if (!connection) {
+      connection = await Connection.create({ requester: userId, recipient: otherId });
+    }
+  }
+
+  message = await Message.create({
+    conversation: targetId,
+    sender: userId,
+    content: content || "",
+    attachment: attachment || undefined,
+  });
+  message = await message.populate("sender", "name avatarColor");
+
+  conversation.lastMessageAt = new Date();
+  await conversation.save();
+
+  conversation.participants.forEach((participantId) => {
+    io.to(`user:${participantId}`).emit("message:new", {
+      type: "dm",
+      conversationId: targetId,
+      message,
+    });
+  });
+} else {
           return ack?.({ success: false, message: "Invalid message type" });
         }
 

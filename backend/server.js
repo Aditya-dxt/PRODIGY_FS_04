@@ -13,6 +13,7 @@ const roomRoutes = require("./routes/roomRoutes");
 const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const connectionRoutes = require("./routes/connectionRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +35,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/connections", connectionRoutes);
 
 app.get("/", (req, res) => {
   res.send("PRODIGY_FS_04 Chat API is running");
