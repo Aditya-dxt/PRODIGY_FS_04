@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Avatar from "./Avatar";
 
 const ChatSidebar = ({
@@ -26,7 +27,13 @@ const ChatSidebar = ({
           <span className="brand-dot" /> Pulse
         </div>
         <div className="sidebar-user">
-          <Avatar name={currentUser?.name} color={currentUser?.avatarColor} size={32} />
+          <Link to="/profile">
+            <Avatar
+              name={currentUser?.name}
+              color={currentUser?.avatarColor}
+              size={32}
+            />
+          </Link>
           <div className="sidebar-user-info">
             <p className="sidebar-user-name">{currentUser?.name}</p>
           </div>
@@ -38,7 +45,9 @@ const ChatSidebar = ({
 
       <div className="sidebar-tabs">
         <button
-          className={activeTab === "rooms" ? "sidebar-tab active" : "sidebar-tab"}
+          className={
+            activeTab === "rooms" ? "sidebar-tab active" : "sidebar-tab"
+          }
           onClick={() => setActiveTab("rooms")}
         >
           Rooms
@@ -67,7 +76,8 @@ const ChatSidebar = ({
         {activeTab === "rooms" &&
           rooms.map((room) => {
             const key = `room:${room._id}`;
-            const isActive = selectedThread?.type === "room" && selectedThread.id === room._id;
+            const isActive =
+              selectedThread?.type === "room" && selectedThread.id === room._id;
             return (
               <button
                 key={room._id}
@@ -85,34 +95,48 @@ const ChatSidebar = ({
                 <div className="thread-info">
                   <p className="thread-name">{room.name}</p>
                   <p className="thread-meta">
-                    {room.memberCount} member(s){!room.isMember && " · tap to join"}
+                    {room.memberCount} member(s)
+                    {!room.isMember && " · tap to join"}
                   </p>
                 </div>
-                {unreadCounts[key] > 0 && <span className="unread-badge">{unreadCounts[key]}</span>}
+                {unreadCounts[key] > 0 && (
+                  <span className="unread-badge">{unreadCounts[key]}</span>
+                )}
               </button>
             );
           })}
 
         {activeTab === "rooms" && rooms.length === 0 && (
-          <p className="empty-state small">No rooms yet — create the first one.</p>
+          <p className="empty-state small">
+            No rooms yet — create the first one.
+          </p>
         )}
 
         {activeTab === "dms" &&
           conversations.map((conv) => {
             const key = `dm:${conv._id}`;
-            const isActive = selectedThread?.type === "dm" && selectedThread.id === conv._id;
+            const isActive =
+              selectedThread?.type === "dm" && selectedThread.id === conv._id;
             return (
               <button
                 key={conv._id}
                 className={isActive ? "thread-item active" : "thread-item"}
                 onClick={() =>
-                  onSelectThread({ type: "dm", id: conv._id, name: conv.otherUser?.name, otherUser: conv.otherUser })
+                  onSelectThread({
+                    type: "dm",
+                    id: conv._id,
+                    name: conv.otherUser?.name,
+                    otherUser: conv.otherUser,
+                  })
                 }
               >
                 <Avatar
                   name={conv.otherUser?.name}
                   color={conv.otherUser?.avatarColor}
-                  isOnline={isOnline(conv.otherUser?._id, conv.otherUser?.isOnline)}
+                  isOnline={isOnline(
+                    conv.otherUser?._id,
+                    conv.otherUser?.isOnline,
+                  )}
                   size={38}
                 />
                 <div className="thread-info">
@@ -121,11 +145,13 @@ const ChatSidebar = ({
                     {conv.lastMessage?.content
                       ? conv.lastMessage.content.slice(0, 30)
                       : conv.lastMessage?.attachment?.url
-                      ? "📎 Attachment"
-                      : "No messages yet"}
+                        ? "📎 Attachment"
+                        : "No messages yet"}
                   </p>
                 </div>
-                {unreadCounts[key] > 0 && <span className="unread-badge">{unreadCounts[key]}</span>}
+                {unreadCounts[key] > 0 && (
+                  <span className="unread-badge">{unreadCounts[key]}</span>
+                )}
               </button>
             );
           })}
