@@ -8,6 +8,8 @@ import ChatSidebar from "../components/ChatSidebar";
 import ChatWindow from "../components/ChatWindow";
 import CreateRoomModal from "../components/CreateRoomModal";
 import NewDMModal from "../components/NewDMModal";
+import RoomInfoModal from "../components/RoomInfoModal";
+import JoinRoomModal from "../components/JoinRoomModal";
 
 const threadKey = (type, id) => `${type}:${id}`;
 
@@ -22,10 +24,14 @@ const ChatPage = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedThread, setSelectedThread] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [typingByThread, setTypingByThread] = useState({}); // key -> { userId: name }
+
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
+  const [showJoinRoom, setShowJoinRoom] = useState(false);
+  const [infoModalRoomId, setInfoModalRoomId] = useState(null);
 
   const selectedThreadRef = useRef(selectedThread);
   selectedThreadRef.current = selectedThread;
@@ -44,40 +50,31 @@ const ChatPage = () => {
   }, [loadRooms, loadConversations]);
 
   // ---- Load message history whenever the selected thread changes ----
+  // Rooms are now request-based to join, so this no longer auto-joins —
+  // it just fetches whatever the backend allows (full history for members,
+  // a 24h read-only preview for everyone else).
   useEffect(() => {
     if (!selectedThread) return;
 
     const key = threadKey(selectedThread.type, selectedThread.id);
     setUnreadCounts((prev) => ({ ...prev, [key]: 0 }));
 
-    const loadThread = async () => {
-      // Clicking a room you're not a member of joins it first — same
-      // "public rooms, tap to join" pattern most chat apps use.
-      if (selectedThread.type === "room" && selectedThread.isMember === false) {
-        try {
-          await api.post(`/rooms/${selectedThread.id}/join`);
-          loadRooms();
-        } catch (err) {
-          toast.showToast(err.response?.data?.message || "Failed to join room", "error");
-          return;
-        }
-      }
+    const endpoint =
+      selectedThread.type === "room"
+        ? `/messages/room/${selectedThread.id}`
+        : `/messages/conversation/${selectedThread.id}`;
 
-      const endpoint =
-        selectedThread.type === "room"
-          ? `/messages/room/${selectedThread.id}`
-          : `/messages/conversation/${selectedThread.id}`;
-
-      const res = await api.get(endpoint);
+    api.get(endpoint).then((res) => {
       setMessages(res.data.messages);
+      setIsReadOnly(!!res.data.readOnly);
+    });
 
-      if (selectedThread.type === "room") {
-        socket?.emit("room:subscribe", selectedThread.id);
-      }
-    };
-
-    loadThread();
-  }, [selectedThread, socket, loadRooms, toast]);
+    if (selectedThread.type === "room") {
+      // Anyone can subscribe to receive live updates for the preview window,
+      // even non-members — sending is still gated separately.
+      socket?.emit("room:subscribe", selectedThread.id);
+    }
+  }, [selectedThread, socket]);
 
   // ---- Global socket listeners ----
   useEffect(() => {
@@ -142,7 +139,7 @@ const ChatPage = () => {
   };
 
   const handleTypingStart = () => {
-    if (!selectedThread || !socket) return;
+    if (!selectedThread || !socket || isReadOnly) return;
     socket.emit("typing:start", { type: selectedThread.type, targetId: selectedThread.id });
   };
 
@@ -154,21 +151,42 @@ const ChatPage = () => {
   const handleCreateRoom = async ({ name, description }) => {
     const res = await api.post("/rooms", { name, description });
     loadRooms();
-    setSelectedThread({ type: "room", id: res.data.room._id, name: res.data.room.name });
+    setSelectedThread({ type: "room", id: res.data.room._id, name: res.data.room.name, isMember: true });
     setActiveTab("rooms");
   };
 
   const handleStartDM = async (targetUserId) => {
     const res = await api.post("/conversations", { userId: targetUserId });
     loadConversations();
+    const otherUser = res.data.conversation.participants.find((p) => p._id !== user.id);
     setSelectedThread({
       type: "dm",
       id: res.data.conversation._id,
-      name: res.data.conversation.participants.find((p) => p._id !== user.id)?.name,
-      otherUser: res.data.conversation.participants.find((p) => p._id !== user.id),
+      name: otherUser?.name,
+      otherUser,
     });
     setActiveTab("dms");
     setShowNewDM(false);
+  };
+
+  // Called after finding a room by code — opens its info panel so the user
+  // can read the description and send a join request from there.
+  const handleRoomFoundByCode = (room) => {
+    setInfoModalRoomId(room._id);
+  };
+
+  // Called by RoomInfoModal whenever something changes (request sent,
+  // request accepted/rejected) so the sidebar's counts/labels stay fresh.
+  const handleRoomInfoChange = () => {
+    loadRooms();
+    if (selectedThreadRef.current?.type === "room") {
+      const key = threadKey("room", selectedThreadRef.current.id);
+      // Re-fetch the active thread's messages in case membership just changed
+      api.get(`/messages/room/${selectedThreadRef.current.id}`).then((res) => {
+        setMessages(res.data.messages);
+        setIsReadOnly(!!res.data.readOnly);
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -191,6 +209,8 @@ const ChatPage = () => {
         presenceMap={presenceMap}
         unreadCounts={unreadCounts}
         onOpenCreateRoom={() => setShowCreateRoom(true)}
+        onOpenJoinRoom={() => setShowJoinRoom(true)}
+        onOpenRoomInfo={(roomId) => setInfoModalRoomId(roomId)}
         onOpenNewDM={() => setShowNewDM(true)}
         currentUser={user}
         onLogout={handleLogout}
@@ -199,18 +219,31 @@ const ChatPage = () => {
       <ChatWindow
         thread={selectedThread}
         messages={messages}
+        isReadOnly={isReadOnly}
         currentUserId={user.id}
         onSend={handleSend}
         onTypingStart={handleTypingStart}
         onTypingStop={handleTypingStop}
         typingNames={typingNames}
         presenceMap={presenceMap}
+        onOpenRoomInfo={(roomId) => setInfoModalRoomId(roomId)}
       />
 
       {showCreateRoom && (
         <CreateRoomModal onClose={() => setShowCreateRoom(false)} onCreate={handleCreateRoom} />
       )}
       {showNewDM && <NewDMModal onClose={() => setShowNewDM(false)} onStart={handleStartDM} />}
+      {showJoinRoom && (
+        <JoinRoomModal onClose={() => setShowJoinRoom(false)} onFound={handleRoomFoundByCode} />
+      )}
+      {infoModalRoomId && (
+        <RoomInfoModal
+          roomId={infoModalRoomId}
+          onClose={() => setInfoModalRoomId(null)}
+          onRequestSent={handleRoomInfoChange}
+          onRoomChange={handleRoomInfoChange}
+        />
+      )}
     </div>
   );
 };

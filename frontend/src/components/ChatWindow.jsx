@@ -7,12 +7,14 @@ import TypingIndicator from "./TypingIndicator";
 const ChatWindow = ({
   thread,
   messages,
+  isReadOnly,
   currentUserId,
   onSend,
   onTypingStart,
   onTypingStop,
   typingNames,
   presenceMap,
+  onOpenRoomInfo,
 }) => {
   const scrollRef = useRef(null);
 
@@ -32,9 +34,10 @@ const ChatWindow = ({
     );
   }
 
-  const otherOnline = thread.type === "dm"
-    ? (presenceMap[thread.otherUser?._id]?.isOnline ?? !!thread.otherUser?.isOnline)
-    : null;
+  const otherOnline =
+    thread.type === "dm"
+      ? presenceMap[thread.otherUser?._id]?.isOnline ?? !!thread.otherUser?.isOnline
+      : null;
 
   return (
     <div className="chat-window">
@@ -49,17 +52,33 @@ const ChatWindow = ({
             size={36}
           />
         )}
+
         <div>
-          <h3>{thread.name}</h3>
+          {thread.type === "room" ? (
+            <button className="chat-header-title-btn" onClick={() => onOpenRoomInfo(thread.id)}>
+              <h3>{thread.name}</h3>
+              <span className="chat-header-info-hint">View room info</span>
+            </button>
+          ) : (
+            <h3>{thread.name}</h3>
+          )}
           {thread.type === "dm" && (
             <p className="chat-header-status">{otherOnline ? "Online" : "Offline"}</p>
           )}
         </div>
       </div>
 
+      {isReadOnly && (
+        <div className="preview-banner">
+          Previewing the last 24 hours. You'll need to join this room to send messages.
+        </div>
+      )}
+
       <div className="chat-messages">
         {messages.length === 0 ? (
-          <p className="empty-state small">No messages yet. Say hello!</p>
+          <p className="empty-state small">
+            {isReadOnly ? "No recent activity in this room." : "No messages yet. Say hello!"}
+          </p>
         ) : (
           messages.map((msg) => (
             <MessageBubble
@@ -73,7 +92,13 @@ const ChatWindow = ({
         <div ref={scrollRef} />
       </div>
 
-      <MessageInput onSend={onSend} onTypingStart={onTypingStart} onTypingStop={onTypingStop} />
+      {isReadOnly ? (
+        <div className="readonly-banner">
+          🔒 You're not a member of this room yet — open room info to request to join.
+        </div>
+      ) : (
+        <MessageInput onSend={onSend} onTypingStart={onTypingStart} onTypingStop={onTypingStop} />
+      )}
     </div>
   );
 };
