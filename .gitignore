@@ -1,0 +1,9 @@
+node_modules/
+.env
+dist/
+.DS_Store
+*.log
+
+# Uploaded chat attachments — keep the folder (.gitkeep) but not real uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
