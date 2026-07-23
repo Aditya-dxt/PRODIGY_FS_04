@@ -23,7 +23,10 @@ body {
   color: var(--ink);
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: "Space Grotesk", sans-serif;
   margin: 0;
 }
@@ -204,8 +207,14 @@ button {
   background: #b8285a;
 }
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ---------- Modals ---------- */
@@ -324,6 +333,55 @@ button {
   background: #cbd5e1;
 }
 
+.header-avatar-btn,
+.user-search-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.header-avatar-btn:hover,
+.user-search-avatar-btn:hover {
+  transform: scale(1.06);
+}
+
+.profile-modal {
+  text-align: center;
+}
+.profile-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 22px;
+}
+.profile-modal-header h3 {
+  margin-top: 12px;
+  font-size: 19px;
+}
+.profile-modal-status {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+.profile-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.connected-badge {
+  color: #15803d;
+  font-weight: 700;
+  font-size: 13.5px;
+  background: #dcfce7;
+  padding: 10px;
+  border-radius: 10px;
+  margin: 0;
+}
+
 /* ================= LANDING PAGE ================= */
 
 .landing-page {
@@ -394,8 +452,14 @@ button {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-visual {
@@ -412,13 +476,31 @@ button {
   border: 2px solid rgba(91, 61, 245, 0.25);
   animation: pulseRing 3s ease-out infinite;
 }
-.ring-1 { width: 140px; height: 140px; animation-delay: 0s; }
-.ring-2 { width: 140px; height: 140px; animation-delay: 1s; }
-.ring-3 { width: 140px; height: 140px; animation-delay: 2s; }
+.ring-1 {
+  width: 140px;
+  height: 140px;
+  animation-delay: 0s;
+}
+.ring-2 {
+  width: 140px;
+  height: 140px;
+  animation-delay: 1s;
+}
+.ring-3 {
+  width: 140px;
+  height: 140px;
+  animation-delay: 2s;
+}
 
 @keyframes pulseRing {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(3.2); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
 }
 
 .floating-bubble {
@@ -454,8 +536,13 @@ button {
 }
 
 @keyframes floatBubble {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 .landing-features {
@@ -481,7 +568,9 @@ button {
   border-radius: var(--radius);
   padding: 28px 22px;
   text-align: center;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   animation: fadeUp 0.5s ease both;
 }
 .feature-card:hover {
@@ -872,7 +961,9 @@ button {
   color: var(--ink-soft);
   padding: 4px;
   border-radius: 6px;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
 }
 .thread-item:hover .room-info-btn {
   opacity: 1;
@@ -1050,12 +1141,24 @@ button {
   background: var(--ink-soft);
   animation: typingBounce 1.2s infinite ease-in-out;
 }
-.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-  30% { transform: translateY(-4px); opacity: 1; }
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .message-input-bar {

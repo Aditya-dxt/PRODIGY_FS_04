@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import { useToast } from "../context/ToastContext";
 import Avatar from "./Avatar";
 
-const NewDMModal = ({ onClose, onStart }) => {
+const NewDMModal = ({ onClose, onStart, onViewProfile }) => {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [connectingIds, setConnectingIds] = useState({}); // userId -> 'sending' | 'sent'
-  const toast = useToast();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -20,28 +17,6 @@ const NewDMModal = ({ onClose, onStart }) => {
     }, 250);
     return () => clearTimeout(timeout);
   }, [search]);
-
-  const handleConnect = async (e, userId) => {
-    e.stopPropagation();
-    setConnectingIds((prev) => ({ ...prev, [userId]: "sending" }));
-    try {
-      await api.post("/connections", { recipientId: userId });
-      setConnectingIds((prev) => ({ ...prev, [userId]: "sent" }));
-      toast.showToast("Connection request sent");
-    } catch (err) {
-      const message = err.response?.data?.message || "Failed to send request";
-      toast.showToast(message, "error");
-      if (message.toLowerCase().includes("already")) {
-        setConnectingIds((prev) => ({ ...prev, [userId]: "sent" }));
-      } else {
-        setConnectingIds((prev) => {
-          const next = { ...prev };
-          delete next[userId];
-          return next;
-        });
-      }
-    }
-  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -63,23 +38,21 @@ const NewDMModal = ({ onClose, onStart }) => {
           ) : (
             users.map((u) => (
               <div key={u._id} className="user-search-item">
-                <button className="user-search-item-main" onClick={() => onStart(u._id)}>
+                <button
+                  className="user-search-avatar-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewProfile(u._id);
+                  }}
+                  title="View profile"
+                >
                   <Avatar name={u.name} color={u.avatarColor} isOnline={u.isOnline} size={36} />
+                </button>
+                <button className="user-search-item-main" onClick={() => onStart(u._id)}>
                   <div>
                     <p className="thread-name">{u.name}</p>
                     <p className="thread-meta">@{u.username}</p>
                   </div>
-                </button>
-                <button
-                  className="btn-outline connect-btn"
-                  disabled={connectingIds[u._id] === "sending" || connectingIds[u._id] === "sent"}
-                  onClick={(e) => handleConnect(e, u._id)}
-                >
-                  {connectingIds[u._id] === "sent"
-                    ? "Requested"
-                    : connectingIds[u._id] === "sending"
-                    ? "..."
-                    : "Connect"}
                 </button>
               </div>
             ))
@@ -87,8 +60,8 @@ const NewDMModal = ({ onClose, onStart }) => {
         </div>
 
         <p className="modal-footnote">
-          Tap a name to open a chat — your first message doubles as a connection request. Or use
-          "Connect" to send a request without messaging.
+          Tap the avatar to view their profile and send a connection request, or tap the name to
+          start messaging directly.
         </p>
       </div>
     </div>

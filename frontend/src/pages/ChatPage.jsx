@@ -10,6 +10,7 @@ import CreateRoomModal from "../components/CreateRoomModal";
 import NewDMModal from "../components/NewDMModal";
 import RoomInfoModal from "../components/RoomInfoModal";
 import JoinRoomModal from "../components/JoinRoomModal";
+import UserProfileModal from "../components/UserProfileModal";
 
 const threadKey = (type, id) => `${type}:${id}`;
 
@@ -32,6 +33,7 @@ const ChatPage = () => {
   const [showNewDM, setShowNewDM] = useState(false);
   const [showJoinRoom, setShowJoinRoom] = useState(false);
   const [infoModalRoomId, setInfoModalRoomId] = useState(null);
+  const [viewProfileUserId, setViewProfileUserId] = useState(null);
 
   const selectedThreadRef = useRef(selectedThread);
   selectedThreadRef.current = selectedThread;
@@ -41,7 +43,9 @@ const ChatPage = () => {
   }, []);
 
   const loadConversations = useCallback(() => {
-    api.get("/conversations").then((res) => setConversations(res.data.conversations));
+    api
+      .get("/conversations")
+      .then((res) => setConversations(res.data.conversations));
   }, []);
 
   useEffect(() => {
@@ -83,7 +87,8 @@ const ChatPage = () => {
       const id = type === "room" ? roomId : conversationId;
       const key = threadKey(type, id);
       const current = selectedThreadRef.current;
-      const isActiveThread = current && current.type === type && current.id === id;
+      const isActiveThread =
+        current && current.type === type && current.id === id;
 
       if (isActiveThread) {
         setMessages((prev) => [...prev, message]);
@@ -133,31 +138,44 @@ const ChatPage = () => {
         if (!ack?.success) {
           toast.showToast(ack?.message || "Failed to send message", "error");
         }
-      }
+      },
     );
   };
 
   const handleTypingStart = () => {
     if (!selectedThread || !socket || isReadOnly) return;
-    socket.emit("typing:start", { type: selectedThread.type, targetId: selectedThread.id });
+    socket.emit("typing:start", {
+      type: selectedThread.type,
+      targetId: selectedThread.id,
+    });
   };
 
   const handleTypingStop = () => {
     if (!selectedThread || !socket) return;
-    socket.emit("typing:stop", { type: selectedThread.type, targetId: selectedThread.id });
+    socket.emit("typing:stop", {
+      type: selectedThread.type,
+      targetId: selectedThread.id,
+    });
   };
 
   const handleCreateRoom = async ({ name, description }) => {
     const res = await api.post("/rooms", { name, description });
     loadRooms();
-    setSelectedThread({ type: "room", id: res.data.room._id, name: res.data.room.name, isMember: true });
+    setSelectedThread({
+      type: "room",
+      id: res.data.room._id,
+      name: res.data.room.name,
+      isMember: true,
+    });
     setActiveTab("rooms");
   };
 
   const handleStartDM = async (targetUserId) => {
     const res = await api.post("/conversations", { userId: targetUserId });
     loadConversations();
-    const otherUser = res.data.conversation.participants.find((p) => p._id !== user.id);
+    const otherUser = res.data.conversation.participants.find(
+      (p) => p._id !== user.id,
+    );
     setSelectedThread({
       type: "dm",
       id: res.data.conversation._id,
@@ -166,6 +184,7 @@ const ChatPage = () => {
     });
     setActiveTab("dms");
     setShowNewDM(false);
+    setViewProfileUserId(null);
   };
 
   // Called after finding a room by code — opens its info panel so the user
@@ -191,8 +210,12 @@ const ChatPage = () => {
     navigate("/login");
   };
 
-  const activeKey = selectedThread ? threadKey(selectedThread.type, selectedThread.id) : null;
-  const typingNames = activeKey ? Object.values(typingByThread[activeKey] || {}) : [];
+  const activeKey = selectedThread
+    ? threadKey(selectedThread.type, selectedThread.id)
+    : null;
+  const typingNames = activeKey
+    ? Object.values(typingByThread[activeKey] || {})
+    : [];
 
   return (
     <div className="chat-app">
@@ -211,6 +234,7 @@ const ChatPage = () => {
         onOpenNewDM={() => setShowNewDM(true)}
         currentUser={user}
         onLogout={handleLogout}
+        onViewProfile={(userId) => setViewProfileUserId(userId)}
       />
 
       <ChatWindow
@@ -224,14 +248,30 @@ const ChatPage = () => {
         typingNames={typingNames}
         presenceMap={presenceMap}
         onOpenRoomInfo={(roomId) => setInfoModalRoomId(roomId)}
+        onViewProfile={(userId) => setViewProfileUserId(userId)}
       />
 
       {showCreateRoom && (
-        <CreateRoomModal onClose={() => setShowCreateRoom(false)} onCreate={handleCreateRoom} />
+        <CreateRoomModal
+          onClose={() => setShowCreateRoom(false)}
+          onCreate={handleCreateRoom}
+        />
       )}
-      {showNewDM && <NewDMModal onClose={() => setShowNewDM(false)} onStart={handleStartDM} />}
+      {showNewDM && (
+        <NewDMModal
+          onClose={() => setShowNewDM(false)}
+          onStart={handleStartDM}
+          onViewProfile={(userId) => {
+            setShowNewDM(false);
+            setViewProfileUserId(userId);
+          }}
+        />
+      )}
       {showJoinRoom && (
-        <JoinRoomModal onClose={() => setShowJoinRoom(false)} onFound={handleRoomFoundByCode} />
+        <JoinRoomModal
+          onClose={() => setShowJoinRoom(false)}
+          onFound={handleRoomFoundByCode}
+        />
       )}
       {infoModalRoomId && (
         <RoomInfoModal
@@ -239,6 +279,13 @@ const ChatPage = () => {
           onClose={() => setInfoModalRoomId(null)}
           onRequestSent={handleRoomInfoChange}
           onRoomChange={handleRoomInfoChange}
+        />
+      )}
+      {viewProfileUserId && (
+        <UserProfileModal
+          userId={viewProfileUserId}
+          onClose={() => setViewProfileUserId(null)}
+          onMessage={handleStartDM}
         />
       )}
     </div>

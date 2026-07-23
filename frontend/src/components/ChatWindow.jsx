@@ -15,6 +15,7 @@ const ChatWindow = ({
   typingNames,
   presenceMap,
   onOpenRoomInfo,
+  onViewProfile,
 }) => {
   const scrollRef = useRef(null);
 
@@ -36,7 +37,8 @@ const ChatWindow = ({
 
   const otherOnline =
     thread.type === "dm"
-      ? presenceMap[thread.otherUser?._id]?.isOnline ?? !!thread.otherUser?.isOnline
+      ? (presenceMap[thread.otherUser?._id]?.isOnline ??
+        !!thread.otherUser?.isOnline)
       : null;
 
   return (
@@ -45,17 +47,26 @@ const ChatWindow = ({
         {thread.type === "room" ? (
           <div className="thread-avatar room-avatar">#</div>
         ) : (
-          <Avatar
-            name={thread.otherUser?.name}
-            color={thread.otherUser?.avatarColor}
-            isOnline={otherOnline}
-            size={36}
-          />
+          <button
+            className="header-avatar-btn"
+            onClick={() => onViewProfile(thread.otherUser?._id)}
+            title="View profile"
+          >
+            <Avatar
+              name={thread.otherUser?.name}
+              color={thread.otherUser?.avatarColor}
+              isOnline={otherOnline}
+              size={36}
+            />
+          </button>
         )}
 
         <div>
           {thread.type === "room" ? (
-            <button className="chat-header-title-btn" onClick={() => onOpenRoomInfo(thread.id)}>
+            <button
+              className="chat-header-title-btn"
+              onClick={() => onOpenRoomInfo(thread.id)}
+            >
               <h3>{thread.name}</h3>
               <span className="chat-header-info-hint">View room info</span>
             </button>
@@ -63,28 +74,36 @@ const ChatWindow = ({
             <h3>{thread.name}</h3>
           )}
           {thread.type === "dm" && (
-            <p className="chat-header-status">{otherOnline ? "Online" : "Offline"}</p>
+            <p className="chat-header-status">
+              {otherOnline ? "Online" : "Offline"}
+            </p>
           )}
         </div>
       </div>
 
       {isReadOnly && (
         <div className="preview-banner">
-          Previewing the last 24 hours. You'll need to join this room to send messages.
+          Previewing the last 24 hours. You'll need to join this room to send
+          messages.
         </div>
       )}
 
       <div className="chat-messages">
         {messages.length === 0 ? (
           <p className="empty-state small">
-            {isReadOnly ? "No recent activity in this room." : "No messages yet. Say hello!"}
+            {isReadOnly
+              ? "No recent activity in this room."
+              : "No messages yet. Say hello!"}
           </p>
         ) : (
           messages.map((msg) => (
             <MessageBubble
               key={msg._id}
               message={msg}
-              isOwn={msg.sender?._id === currentUserId || msg.sender === currentUserId}
+              isOwn={
+                msg.sender?._id === currentUserId ||
+                msg.sender === currentUserId
+              }
             />
           ))
         )}
@@ -94,10 +113,15 @@ const ChatWindow = ({
 
       {isReadOnly ? (
         <div className="readonly-banner">
-          🔒 You're not a member of this room yet — open room info to request to join.
+          🔒 You're not a member of this room yet — open room info to request to
+          join.
         </div>
       ) : (
-        <MessageInput onSend={onSend} onTypingStart={onTypingStart} onTypingStop={onTypingStop} />
+        <MessageInput
+          onSend={onSend}
+          onTypingStart={onTypingStart}
+          onTypingStop={onTypingStop}
+        />
       )}
     </div>
   );

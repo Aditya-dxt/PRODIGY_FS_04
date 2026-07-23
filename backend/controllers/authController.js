@@ -123,3 +123,18 @@ exports.searchUsers = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch users", error: error.message });
   }
 };
+
+// @route GET /api/auth/users/:id — public profile view for a single user
+exports.getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      "name username avatarColor isOnline lastSeen"
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch user", error: error.message });
+  }
+};
